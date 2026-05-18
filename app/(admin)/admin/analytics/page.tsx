@@ -1,27 +1,78 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, ShoppingBag, Users, Activity } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import prisma from "@/lib/prisma";
+import { withRetry } from "@/lib/safe-db";
+import { RevenueLineChart, CategoryBarChart } from "./AnalyticsCharts";
 
-const SALES_DATA = [
-  { name: 'Jan', sales: 4000 },
-  { name: 'Feb', sales: 3000 },
-  { name: 'Mar', sales: 5000 },
-  { name: 'Apr', sales: 4500 },
-  { name: 'May', sales: 6000 },
-  { name: 'Jun', sales: 8000 },
-  { name: 'Jul', sales: 7500 },
-];
+export default async function AdminAnalyticsPage() {
+  const data = await withRetry(async () => {
+    const [
+      revenueResult,
+      totalOrders,
+      totalCustomers,
+      ordersToday,
+      allOrders,
+      categories,
+      orderItems
+    ] = await Promise.all([
+      prisma.order.aggregate({ _sum: { totalAmount: true } }),
+      prisma.order.count(),
+      prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      prisma.order.count({ 
+        where: { 
+          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } 
+        }
+      }),
+      prisma.order.findMany({ select: { createdAt: true, totalAmount: true } }),
+      prisma.category.findMany(),
+      prisma.orderItem.findMany({ include: { product: true } })
+    ]);
 
-const CATEGORY_DATA = [
-  { name: 'Whey Protein', revenue: 45000 },
-  { name: 'Gainers', revenue: 30000 },
-  { name: 'Pre-Workout', revenue: 15000 },
-  { name: 'Vitamins', revenue: 8000 },
-];
+    return {
+      revenueResult,
+      totalOrders,
+      totalCustomers,
+      ordersToday,
+      allOrders,
+      categories,
+      orderItems
+    };
+  });
 
-export default function AdminAnalyticsPage() {
+  const totalRevenue = data.revenueResult._sum.totalAmount ? Number(data.revenueResult._sum.totalAmount) : 0;
+
+  // Process Sales Data (Monthly)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const salesMap = new Map();
+  months.forEach(m => salesMap.set(m, 0));
+  
+  data.allOrders.forEach(order => {
+    const month = months[order.createdAt.getMonth()];
+    salesMap.set(month, salesMap.get(month) + Number(order.totalAmount));
+  });
+
+  // Filter out months with 0 sales from the start to make the chart look better, unless all are 0
+  let salesData = Array.from(salesMap.entries()).map(([name, sales]) => ({ name, sales }));
+  const firstMonthWithSales = salesData.findIndex(d => d.sales > 0);
+  if (firstMonthWithSales > 0) {
+      salesData = salesData.slice(Math.max(0, firstMonthWithSales - 1));
+  }
+
+  // Process Category Data
+  const categoryMap = new Map();
+  data.categories.forEach(c => categoryMap.set(c.id, { name: c.name, revenue: 0 }));
+
+  data.orderItems.forEach(item => {
+    const cat = categoryMap.get(item.product.categoryId);
+    if (cat) {
+      cat.revenue += (Number(item.price) * item.quantity);
+    }
+  });
+
+  const categoryData = Array.from(categoryMap.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5); // Top 5 categories
+
   return (
     <div className="space-y-8">
       <div>
@@ -41,9 +92,9 @@ export default function AdminAnalyticsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black">₹4,52,318</div>
+            <div className="text-3xl font-black">₹{totalRevenue.toLocaleString()}</div>
             <p className="text-xs font-bold text-green-500 mt-1 flex items-center">
-              +20.1% from last month
+              Lifetime Earnings
             </p>
           </CardContent>
         </Card>
@@ -58,9 +109,9 @@ export default function AdminAnalyticsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black">+573</div>
-            <p className="text-xs font-bold text-green-500 mt-1 flex items-center">
-              +12% from last month
+            <div className="text-3xl font-black">{data.totalOrders}</div>
+            <p className="text-xs font-bold text-blue-500 mt-1 flex items-center">
+              Total orders placed
             </p>
           </CardContent>
         </Card>
@@ -68,16 +119,16 @@ export default function AdminAnalyticsPage() {
         <Card className="border-none shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              New Customers
+              Customers
             </CardTitle>
             <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
               <Users className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black">+124</div>
-            <p className="text-xs font-bold text-green-500 mt-1 flex items-center">
-              +8% from last month
+            <div className="text-3xl font-black">{data.totalCustomers}</div>
+            <p className="text-xs font-bold text-purple-500 mt-1 flex items-center">
+              Registered customers
             </p>
           </CardContent>
         </Card>
@@ -85,16 +136,16 @@ export default function AdminAnalyticsPage() {
         <Card className="border-none shadow-sm bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Active Sessions
+              Orders Today
             </CardTitle>
             <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
               <Activity className="h-5 w-5 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black">42</div>
-            <p className="text-xs font-bold text-muted-foreground mt-1 flex items-center">
-              Current live users
+            <div className="text-3xl font-black">{data.ordersToday}</div>
+            <p className="text-xs font-bold text-orange-500 mt-1 flex items-center">
+              Placed in last 24h
             </p>
           </CardContent>
         </Card>
@@ -108,18 +159,7 @@ export default function AdminAnalyticsPage() {
           </CardHeader>
           <CardContent className="pl-0">
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={SALES_DATA} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dx={-10} tickFormatter={(val) => `₹${val}`} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                  />
-                  <Line type="monotone" dataKey="sales" stroke="#F5A623" strokeWidth={3} dot={{ r: 4, fill: '#F5A623', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <RevenueLineChart data={salesData} />
             </div>
           </CardContent>
         </Card>
@@ -130,19 +170,7 @@ export default function AdminAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={CATEGORY_DATA} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#111827', fontWeight: 'bold' }} width={100} />
-                  <Tooltip 
-                    cursor={{fill: '#f3f4f6'}}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                  />
-                  <Bar dataKey="revenue" fill="#111827" radius={[0, 4, 4, 0]} barSize={30} />
-                </BarChart>
-              </ResponsiveContainer>
+              <CategoryBarChart data={categoryData} />
             </div>
           </CardContent>
         </Card>

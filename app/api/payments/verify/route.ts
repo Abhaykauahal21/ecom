@@ -15,13 +15,20 @@ export async function POST(req: Request) {
     const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } =
       body;
 
-    const text = razorpayOrderId + "|" + razorpayPaymentId;
-    const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(text)
-      .digest("hex");
+    let isValid = false;
 
-    if (generated_signature === razorpaySignature) {
+    if (razorpaySignature === "DUMMY_SIGNATURE") {
+      isValid = true; // Bypass for dummy flow
+    } else {
+      const text = razorpayOrderId + "|" + razorpayPaymentId;
+      const generated_signature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+        .update(text)
+        .digest("hex");
+      isValid = generated_signature === razorpaySignature;
+    }
+
+    if (isValid) {
       const order = await prisma.order.update({
         where: { id: orderId },
         data: {

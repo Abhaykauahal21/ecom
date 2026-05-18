@@ -91,46 +91,69 @@ export default function CheckoutPage() {
         throw new Error(orderData.error || "Failed to create order");
       }
 
-      // 2. Initialize Razorpay
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: "INR",
-        name: "SUPPSTORE",
-        description: "Payment for your order",
-        order_id: orderData.razorpayOrderId,
-        handler: async function (response: any) {
-          // 3. Verify payment on the server
-          const verifyResponse = await fetch("/api/payments/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: orderData.id,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            }),
-          });
+      // 2. Initialize Razorpay (or dummy flow)
+      if (orderData.razorpayOrderId.startsWith("dummy_")) {
+        // Dummy testing flow (no actual Razorpay)
+        const verifyResponse = await fetch("/api/payments/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: orderData.id,
+            razorpayOrderId: orderData.razorpayOrderId,
+            razorpayPaymentId: `dummy_payment_${Date.now()}`,
+            razorpaySignature: "DUMMY_SIGNATURE",
+          }),
+        });
 
-          if (verifyResponse.ok) {
-            cart.clearCart();
-            toast.success("Order placed successfully!");
-            router.push(`/orders/${orderData.id}`);
-          } else {
-            toast.error("Payment verification failed");
-          }
-        },
-        prefill: {
-          name: user?.fullName || "",
-          email: user?.primaryEmailAddress?.emailAddress || "",
-        },
-        theme: {
-          color: "#00FF87",
-        },
-      };
+        if (verifyResponse.ok) {
+          cart.clearCart();
+          toast.success("Order placed successfully! (Dummy flow)");
+          router.push(`/orders/${orderData.id}`);
+        } else {
+          toast.error("Dummy payment verification failed");
+        }
+      } else {
+        // Real Razorpay flow
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: orderData.amount,
+          currency: "INR",
+          name: "SUPPSTORE",
+          description: "Payment for your order",
+          order_id: orderData.razorpayOrderId,
+          handler: async function (response: any) {
+            // 3. Verify payment on the server
+            const verifyResponse = await fetch("/api/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: orderData.id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
+            if (verifyResponse.ok) {
+              cart.clearCart();
+              toast.success("Order placed successfully!");
+              router.push(`/orders/${orderData.id}`);
+            } else {
+              toast.error("Payment verification failed");
+            }
+          },
+          prefill: {
+            name: user?.fullName || "",
+            email: user?.primaryEmailAddress?.emailAddress || "",
+          },
+          theme: {
+            color: "#00FF87",
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      }
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Something went wrong");

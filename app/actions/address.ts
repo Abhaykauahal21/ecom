@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { withRetry } from "@/lib/safe-db";
@@ -18,20 +18,25 @@ export async function addAddress(data: {
 }) {
   return withRetry(async () => {
     try {
-      const { userId } = await auth();
+      const clerkUser = await currentUser();
 
-      if (!userId) {
+      if (!clerkUser) {
         throw new Error("Unauthorized");
       }
+      
+      const email = clerkUser.emailAddresses[0]?.emailAddress || data.email || "no-email@example.com";
 
-      const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+      // Upsert the user into our database to ensure they exist
+      const user = await prisma.user.upsert({
+        where: { clerkId: clerkUser.id },
+        update: {},
+        create: {
+          clerkId: clerkUser.id,
+          name: clerkUser.firstName ? `${clerkUser.firstName} ${clerkUser.lastName || ''}` : data.name,
+          email: email,
+        },
         select: { id: true }
       });
-
-      if (!user) {
-        throw new Error("User not found");
-      }
 
       const address = await prisma.$transaction(async (tx) => {
         // If this is the first address, make it default
