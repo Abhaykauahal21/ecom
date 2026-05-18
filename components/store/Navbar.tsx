@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingCart, Search, User, Menu, ArrowRight } from "lucide-react";
@@ -41,13 +42,18 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center group">
-          <div className="flex items-center gap-1">
-            <span className="text-2xl font-black tracking-tighter text-black group-hover:text-brand transition-colors">
-              KAVYA<span className="text-brand group-hover:text-black">BOSS</span>
-            </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-          </div>
+        <Link href="/" className="flex items-center gap-3 group">
+          <Image 
+            src="/logocompany.jpg" 
+            alt="Kavya Boss Nutrition Logo" 
+            width={120} 
+            height={40} 
+            className="object-contain h-10 w-auto rounded-full shadow-sm"
+            priority
+          />
+          <span className="text-xl md:text-2xl font-black tracking-tighter text-black group-hover:text-brand transition-colors">
+            KAVYA BOSS <span className="text-brand group-hover:text-black">NUTRITION</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -102,23 +108,34 @@ export default function Navbar() {
               <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-xl hover:bg-gray-50" />}>
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
-              <SheetContent side="right" className="rounded-l-3xl border-none shadow-2xl">
-                <SheetHeader>
-                  <SheetTitle className="text-left font-black tracking-tighter text-2xl">MENU</SheetTitle>
+              <SheetContent side="right" className="rounded-l-3xl border-none shadow-2xl bg-white/95 backdrop-blur-2xl">
+                <SheetHeader className="text-left border-b border-gray-100 pb-6">
+                  <SheetTitle className="flex flex-col items-start gap-4">
+                    <Image 
+                      src="/logocompany.jpg" 
+                      alt="Kavya Boss Nutrition Logo" 
+                      width={120} 
+                      height={40} 
+                      className="object-contain h-12 w-auto rounded-full shadow-sm"
+                    />
+                    <span className="text-2xl font-black tracking-tighter text-black leading-none">
+                      KAVYA BOSS <br/><span className="text-brand">NUTRITION</span>
+                    </span>
+                  </SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col space-y-6 mt-12">
+                <div className="flex flex-col space-y-2 mt-8">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className="text-xl font-bold hover:text-brand transition-colors flex items-center justify-between group"
+                      className="text-lg font-bold hover:bg-brand/10 hover:text-brand px-4 py-3 rounded-2xl transition-all flex items-center justify-between group"
                     >
                       {link.name}
                       <ArrowRight className="h-5 w-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </Link>
                   ))}
-                  <div className="pt-6 border-t border-gray-100">
-                    <Link href="/orders" className="text-xl font-bold hover:text-brand flex items-center justify-between group">
+                  <div className="pt-6 mt-4 border-t border-gray-100">
+                    <Link href="/orders" className="text-lg font-bold hover:bg-brand/10 hover:text-brand px-4 py-3 rounded-2xl transition-all flex items-center justify-between group">
                       My Orders
                       <ArrowRight className="h-5 w-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </Link>

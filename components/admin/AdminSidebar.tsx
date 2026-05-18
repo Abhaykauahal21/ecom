@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -32,9 +33,17 @@ export default function AdminSidebar() {
   return (
     <div className="hidden lg:flex flex-col w-64 bg-background border-r h-screen sticky top-0">
       <div className="p-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-bold tracking-tighter text-brand">
-            SUPP<span className="text-foreground">ADMIN</span>
+        <Link href="/admin" className="flex items-center gap-3">
+          <Image 
+            src="/logocompany.jpg" 
+            alt="Kavya Boss Nutrition Logo" 
+            width={120} 
+            height={40} 
+            className="object-contain h-8 w-auto rounded-full shadow-sm"
+            priority
+          />
+          <span className="text-xl font-black tracking-tighter text-foreground leading-none">
+            KAVYA BOSS<br/><span className="text-brand text-sm">NUTRITION</span>
           </span>
         </Link>
       </div>
