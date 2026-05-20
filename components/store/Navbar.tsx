@@ -95,6 +95,14 @@ export default function Navbar() {
               </Button>
             </CartDrawer>
 
+            {userId && (
+              <Link href="/profile">
+                <Button variant="ghost" size="icon" className="h-10 w-10 md:h-11 md:w-11 rounded-xl md:rounded-2xl hover:bg-gray-50 group">
+                  <User className="h-5 w-5 text-gray-700 group-hover:text-black transition-colors" />
+                </Button>
+              </Link>
+            )}
+
             {userId ? (
               <UserButton />
             ) : (
@@ -134,7 +142,11 @@ export default function Navbar() {
                       <ArrowRight className="h-5 w-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </Link>
                   ))}
-                  <div className="pt-6 mt-4 border-t border-gray-100">
+                  <div className="pt-6 mt-4 border-t border-gray-100 space-y-1">
+                    <Link href="/profile" className="text-lg font-bold hover:bg-brand/10 hover:text-brand px-4 py-3 rounded-2xl transition-all flex items-center justify-between group">
+                      My Profile
+                      <ArrowRight className="h-5 w-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    </Link>
                     <Link href="/orders" className="text-lg font-bold hover:bg-brand/10 hover:text-brand px-4 py-3 rounded-2xl transition-all flex items-center justify-between group">
                       My Orders
                       <ArrowRight className="h-5 w-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />

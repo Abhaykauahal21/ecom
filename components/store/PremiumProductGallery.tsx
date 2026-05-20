@@ -15,6 +15,8 @@ export default function PremiumProductGallery({ images }: PremiumProductGalleryP
   const [currentImage, setCurrentImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   const galleryImages = images && images.length > 0 
     ? images 
@@ -25,6 +27,30 @@ export default function PremiumProductGallery({ images }: PremiumProductGalleryP
     const x = ((e.clientX - left) / width) * 100;
     const y = ((e.clientY - top) / height) * 100;
     setMousePos({ x, y });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      setCurrentImage((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
+    } else if (isRightSwipe) {
+      setCurrentImage((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+    }
   };
 
   return (
@@ -54,6 +80,9 @@ export default function PremiumProductGallery({ images }: PremiumProductGalleryP
           onMouseEnter={() => setIsZoomed(true)}
           onMouseLeave={() => setIsZoomed(false)}
           onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           layoutId="main-product-image"
         >
           <AnimatePresence mode="wait">
