@@ -2,7 +2,7 @@ import { Dumbbell } from "lucide-react";
 
 export default function StoreLoading() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center space-y-8 px-4">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center space-y-8 px-4">
       <div className="relative flex items-center justify-center">
         {/* Pulsing neon brand glow */}
         <div className="absolute h-32 w-32 rounded-full bg-brand/10 blur-3xl animate-pulse" />
