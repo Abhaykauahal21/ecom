@@ -72,7 +72,7 @@ export default function RootLayout({
           />
           <ScrollToTop />
           {children}
-          <Toaster />
+          <Toaster position="top-right" richColors />
         </body>
       </html>
     </ClerkProvider>
