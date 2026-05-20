@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,23 +20,26 @@ export default function NewBannerPage() {
     isActive: true,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.label || !formData.imageUrl) {
-        toast.error("Label and Image URL are required");
+    const data = new FormData(e.currentTarget);
+    const label = data.get("label") as string;
+    const imageUrl = data.get("imageUrl") as string;
+    const file = data.get("imageFile") as File | null;
+
+    if (!label.trim()) {
+        toast.error("Banner label is required");
+        return;
+    }
+    if (!imageUrl.trim() && (!file || file.size === 0)) {
+        toast.error("Please provide either an Image URL or upload an image file");
         return;
     }
     
     setIsSubmitting(true);
     
     try {
-        const res = await createBanner({
-            label: formData.label,
-            imageUrl: formData.imageUrl,
-            link: formData.link || undefined,
-            isActive: formData.isActive
-        });
-
+        const res = await createBanner(data);
         if (res.success) {
             toast.success("Banner created successfully");
             router.push("/admin/banners");
@@ -61,11 +64,12 @@ export default function NewBannerPage() {
       </div>
 
       <div className="bg-card border rounded-2xl p-6 md:p-8 shadow-sm">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
           <div className="space-y-2">
-            <Label htmlFor="label">Banner Label</Label>
+            <Label htmlFor="label">Banner Label *</Label>
             <Input 
                 id="label"
+                name="label"
                 placeholder="e.g. Summer Sale 2026"
                 value={formData.label}
                 onChange={(e) => setFormData({...formData, label: e.target.value})}
@@ -74,22 +78,38 @@ export default function NewBannerPage() {
             <p className="text-xs text-muted-foreground">This is for internal reference only.</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input 
-                id="imageUrl"
-                placeholder="https://example.com/banner-image.jpg"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                required
-            />
-            <p className="text-xs text-muted-foreground">Provide a direct link to the banner image. Recommended aspect ratio is 16:9 or wider.</p>
+          <div className="space-y-4 bg-muted/10 p-5 rounded-2xl border border-white/5">
+            <Label className="font-bold text-sm">Banner Image Asset</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl" className="text-xs text-muted-foreground">Option 1: Provide Image URL</Label>
+                <Input 
+                    id="imageUrl"
+                    name="imageUrl"
+                    placeholder="https://example.com/banner-image.jpg"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="imageFile" className="text-xs text-muted-foreground">Option 2: Or Upload File (JPEG/PNG/WEBP)</Label>
+                <Input 
+                    id="imageFile"
+                    name="imageFile"
+                    type="file"
+                    accept="image/jpeg, image/png, image/webp"
+                    className="file:bg-black file:text-white file:border-0 file:rounded-md file:text-[10px] file:font-black file:uppercase file:px-3 file:py-1 cursor-pointer h-10"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Recommended aspect ratio is 16:9 or wider (e.g. 1920x1080 or 1200x630).</p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="link">Target Link (Optional)</Label>
             <Input 
                 id="link"
+                name="link"
                 placeholder="https://yourstore.com/products/sale"
                 value={formData.link}
                 onChange={(e) => setFormData({...formData, link: e.target.value})}
@@ -105,9 +125,10 @@ export default function NewBannerPage() {
             <input 
                 type="checkbox"
                 id="isActive"
+                name="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
-                className="w-5 h-5 accent-brand"
+                className="w-5 h-5 accent-brand cursor-pointer"
             />
           </div>
 
