@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/prisma";
 import HomeContent from "./HomeContent";
 import { withRetry } from "@/lib/safe-db";

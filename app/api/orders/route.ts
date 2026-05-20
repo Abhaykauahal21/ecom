@@ -36,7 +36,24 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
-      // Verify stock and get real prices
+      // Fetch shipping configuration from DB
+      let shippingCharge = 99.00;
+      let freeShippingThreshold = 500.00;
+
+      try {
+        const config = await prisma.shippingConfig.findUnique({
+          where: { id: "default" },
+        });
+        if (config) {
+          shippingCharge = Number(config.shippingCharge);
+          freeShippingThreshold = Number(config.freeShippingThreshold);
+        }
+      } catch (error) {
+        console.error("Error loading shipping config for order:", error);
+      }
+
+      // Verify stock, get real prices, and calculate subtotal
+      let calculatedSubtotal = 0;
       for (const item of items) {
         const product = await prisma.product.findUnique({
           where: { id: item.productId },
@@ -47,11 +64,15 @@ export async function POST(req: Request) {
             error: `Product ${product?.name || item.name || 'Unknown'} is out of stock or unavailable` 
           }, { status: 400 });
         }
+        calculatedSubtotal += Number(product.price) * item.quantity;
       }
+
+      const calculatedShipping = calculatedSubtotal >= freeShippingThreshold ? 0 : shippingCharge;
+      const calculatedTotal = calculatedSubtotal + calculatedShipping;
 
       // Create Razorpay order (use dummy if no keys exist for testing)
       let razorpayOrderId = `dummy_order_${Date.now()}`;
-      let razorpayAmount = Math.round(totalAmount * 100);
+      let razorpayAmount = Math.round(calculatedTotal * 100);
 
       if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
         const razorpay = getRazorpay();
@@ -68,7 +89,8 @@ export async function POST(req: Request) {
         data: {
           userId: user.id,
           addressId,
-          totalAmount,
+          totalAmount: calculatedTotal,
+          shippingCost: calculatedShipping,
           status: "PENDING",
           paymentId: razorpayOrderId,
           orderItems: {

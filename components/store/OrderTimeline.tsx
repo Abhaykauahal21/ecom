@@ -6,15 +6,30 @@ interface OrderTimelineProps {
 }
 
 const statusSteps = [
-  { id: "PENDING", label: "Placed", icon: ShoppingBag },
-  { id: "CONFIRMED", label: "Confirmed", icon: Check },
-  { id: "PROCESSING", label: "Processing", icon: Clock },
-  { id: "SHIPPED", label: "Shipped", icon: Truck },
+  { id: "PLACED", label: "Placed", icon: ShoppingBag },
+  { id: "PACKED", label: "Packed", icon: Check },
+  { id: "DISPATCHED", label: "Dispatched", icon: Truck },
   { id: "DELIVERED", label: "Delivered", icon: Package },
 ];
 
 export default function OrderTimeline({ status, updatedAt }: OrderTimelineProps) {
-  const currentStepIndex = statusSteps.findIndex((step) => step.id === status);
+  const getStepIndex = (orderStatus: string) => {
+    switch (orderStatus) {
+      case "PENDING":
+        return 0; // Placed
+      case "CONFIRMED":
+      case "PROCESSING":
+        return 1; // Packed
+      case "SHIPPED":
+        return 2; // Dispatched
+      case "DELIVERED":
+        return 3; // Delivered
+      default:
+        return 0;
+    }
+  };
+
+  const currentStepIndex = getStepIndex(status);
   
   if (status === "CANCELLED") {
     return (

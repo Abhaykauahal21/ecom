@@ -8,19 +8,47 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import useCart from "@/hooks/useCart";
 import { Card, CardContent } from "@/components/ui/card";
+import { getShippingConfig } from "@/app/actions/settings";
 
 export default function CartPage() {
   const cart = useCart();
   const [isMounted, setIsMounted] = useState(false);
+  const [shippingCharge, setShippingCharge] = useState(99);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
 
   useEffect(() => {
     setIsMounted(true);
+    async function loadConfig() {
+      try {
+        const res = await getShippingConfig();
+        if (res.success && res.config) {
+          setShippingCharge(res.config.shippingCharge);
+          setFreeShippingThreshold(res.config.freeShippingThreshold);
+        }
+      } catch (error) {
+        console.error("Error loading shipping config in cart:", error);
+      }
+    }
+    loadConfig();
   }, []);
 
   if (!isMounted) return null;
 
   const total = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = total > 500 ? 0 : 99;
+  const shipping = total >= freeShippingThreshold ? 0 : shippingCharge;
+
+  console.log("CART_DEBUG:", {
+    total,
+    freeShippingThreshold,
+    shippingCharge,
+    shipping,
+    types: {
+      total: typeof total,
+      freeShippingThreshold: typeof freeShippingThreshold,
+      shippingCharge: typeof shippingCharge,
+      shipping: typeof shipping
+    }
+  });
 
   if (cart.items.length === 0) {
     return (

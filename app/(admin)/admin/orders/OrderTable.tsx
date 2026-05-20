@@ -14,11 +14,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { updateOrderStatus } from "@/app/actions/order";
 
 export default function OrderTable({ initialOrders }: { initialOrders: any[] }) {
   const [orders] = useState(initialOrders);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      const res = await updateOrderStatus(orderId, newStatus as any);
+      if (res.success) {
+        toast.success(`Order status updated to ${newStatus}`);
+        window.location.reload();
+      } else {
+        toast.error(res.error || "Failed to update order status");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update status");
+    }
+  };
 
   // Filter orders based on status tab
   let filteredOrders = orders;
@@ -127,7 +143,7 @@ export default function OrderTable({ initialOrders }: { initialOrders: any[] }) 
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <OrderActions orderId={order.id} />
+                        <OrderActions orderId={order.id} onStatusUpdate={handleStatusUpdate} />
                       </td>
                     </tr>
                   );
@@ -152,7 +168,7 @@ export default function OrderTable({ initialOrders }: { initialOrders: any[] }) 
                       <p className="font-bold text-sm leading-none line-clamp-1">{customerName}</p>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{displayId}</p>
                     </div>
-                    <OrderActions orderId={order.id} />
+                    <OrderActions orderId={order.id} onStatusUpdate={handleStatusUpdate} />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 pt-2">
@@ -197,7 +213,7 @@ export default function OrderTable({ initialOrders }: { initialOrders: any[] }) 
   );
 }
 
-function OrderActions({ orderId }: { orderId: string }) {
+function OrderActions({ orderId, onStatusUpdate }: { orderId: string; onStatusUpdate: (id: string, status: string) => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -213,13 +229,22 @@ function OrderActions({ orderId }: { orderId: string }) {
               <Eye className="h-3 w-3 mr-2" /> View Details
           </DropdownMenuItem>
         </Link>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => onStatusUpdate(orderId, "SHIPPED")}
+          className="font-bold text-xs uppercase cursor-pointer"
+        >
           <Truck className="h-3 w-3 mr-2" /> Mark as Shipped
         </DropdownMenuItem>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer">
+        <DropdownMenuItem 
+          onClick={() => onStatusUpdate(orderId, "DELIVERED")}
+          className="font-bold text-xs uppercase cursor-pointer"
+        >
           <CheckCircle className="h-3 w-3 mr-2" /> Mark as Delivered
         </DropdownMenuItem>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer text-destructive">
+        <DropdownMenuItem 
+          onClick={() => onStatusUpdate(orderId, "CANCELLED")}
+          className="font-bold text-xs uppercase cursor-pointer text-destructive"
+        >
           <XCircle className="h-3 w-3 mr-2" /> Cancel Order
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRouter } from "next/navigation";
 import PremiumProductGallery from "@/components/store/PremiumProductGallery";
 import ProductBento from "@/components/store/ProductBento";
 import ProductNutrition from "@/components/store/ProductNutrition";
@@ -38,6 +39,7 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
   const [selectedVariant, setSelectedVariant] = useState(product.variants?.[0] || null);
   const [isMounted, setIsMounted] = useState(false);
   const cart = useCart();
+  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
@@ -59,6 +61,21 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
       stock: stock,
       flavor: selectedVariant?.name,
     });
+  };
+
+  const handleBuyItNow = () => {
+    cart.addItem({
+      id: selectedVariant ? `${product.id}-${selectedVariant.id}` : `${product.id}-default`,
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: price,
+      image: product.images?.[0] || "https://images.unsplash.com/photo-1593095183571-2d5ff1e47f2c?auto=format&fit=crop&q=80&w=800",
+      quantity: quantity,
+      stock: stock,
+      flavor: selectedVariant?.name,
+    });
+    router.push("/cart");
   };
 
   if (!isMounted) return null;
@@ -211,6 +228,7 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
                   <Button 
                     variant="outline" 
                     disabled={stock <= 0}
+                    onClick={handleBuyItNow}
                     className="h-14 border-2 border-foreground text-foreground hover:bg-foreground hover:text-background text-lg font-black uppercase tracking-widest rounded-2xl"
                   >
                     Buy It Now

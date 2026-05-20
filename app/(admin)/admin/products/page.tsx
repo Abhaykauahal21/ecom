@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

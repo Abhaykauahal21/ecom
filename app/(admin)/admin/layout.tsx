@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";

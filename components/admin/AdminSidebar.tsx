@@ -25,6 +25,7 @@ const sidebarLinks = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Banners", href: "/admin/banners", icon: ImageIcon },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export default function AdminSidebar() {
@@ -87,9 +88,11 @@ export default function AdminSidebar() {
               <span className="text-[10px] text-muted-foreground">admin@suppstore.com</span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <Settings className="h-4 w-4" />
-          </Button>
+          <Link href="/admin/settings">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

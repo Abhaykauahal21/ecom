@@ -16,6 +16,7 @@ import Link from "next/link";
 import { getAddresses } from "@/app/actions/address";
 import AddressForm from "@/components/store/AddressForm";
 import { cn } from "@/lib/utils";
+import { getShippingConfig } from "@/app/actions/settings";
 
 export default function CheckoutPage() {
   const { user, isLoaded } = useUser();
@@ -26,6 +27,10 @@ export default function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingAddresses, setIsFetchingAddresses] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+
+  const [shippingCharge, setShippingCharge] = useState(99);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
 
   useEffect(() => {
     setIsMounted(true);
@@ -36,7 +41,20 @@ export default function CheckoutPage() {
     document.body.appendChild(script);
 
     fetchAddresses();
+    loadShippingConfig();
   }, []);
+
+  const loadShippingConfig = async () => {
+    try {
+      const res = await getShippingConfig();
+      if (res.success && res.config) {
+        setShippingCharge(res.config.shippingCharge);
+        setFreeShippingThreshold(res.config.freeShippingThreshold);
+      }
+    } catch (error) {
+      console.error("Failed to load shipping config in checkout:", error);
+    }
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -67,12 +85,27 @@ export default function CheckoutPage() {
   }
 
   const subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = subtotal > 500 ? 0 : 99;
+  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCharge;
   const total = subtotal + shipping;
+
+  console.log("CHECKOUT_DEBUG:", {
+    subtotal,
+    freeShippingThreshold,
+    shippingCharge,
+    shipping,
+    total,
+    types: {
+      subtotal: typeof subtotal,
+      freeShippingThreshold: typeof freeShippingThreshold,
+      shippingCharge: typeof shippingCharge,
+      shipping: typeof shipping
+    }
+  });
 
   const handlePayment = async () => {
     try {
       setIsLoading(true);
+      setLoadingMessage("Creating your order...");
 
       // 1. Create order on the server
       const response = await fetch("/api/orders", {
@@ -93,7 +126,7 @@ export default function CheckoutPage() {
 
       // 2. Initialize Razorpay (or dummy flow)
       if (orderData.razorpayOrderId.startsWith("dummy_")) {
-        // Dummy testing flow (no actual Razorpay)
+        setLoadingMessage("Processing payment details...");
         const verifyResponse = await fetch("/api/payments/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -106,22 +139,27 @@ export default function CheckoutPage() {
         });
 
         if (verifyResponse.ok) {
+          setLoadingMessage("Payment verified! Redirecting to tracking page...");
           cart.clearCart();
-          toast.success("Order placed successfully! (Dummy flow)");
-          router.push(`/orders/${orderData.id}`);
+          window.location.href = `/orders/${orderData.id}?placed=true`;
+          return;
         } else {
           toast.error("Dummy payment verification failed");
+          setLoadingMessage(null);
+          setIsLoading(false);
         }
       } else {
+        setLoadingMessage("Redirecting to secure payment gateway...");
         // Real Razorpay flow
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: orderData.amount,
           currency: "INR",
-          name: "SUPPSTORE",
+          name: "KAVYA BOSS NUTRITION",
           description: "Payment for your order",
           order_id: orderData.razorpayOrderId,
           handler: async function (response: any) {
+            setLoadingMessage("Verifying your payment, please do not close this window...");
             // 3. Verify payment on the server
             const verifyResponse = await fetch("/api/payments/verify", {
               method: "POST",
@@ -135,11 +173,13 @@ export default function CheckoutPage() {
             });
 
             if (verifyResponse.ok) {
+              setLoadingMessage("Payment successful! Loading your order details...");
               cart.clearCart();
-              toast.success("Order placed successfully!");
-              router.push(`/orders/${orderData.id}`);
+              window.location.href = `/orders/${orderData.id}?placed=true`;
             } else {
               toast.error("Payment verification failed");
+              setLoadingMessage(null);
+              setIsLoading(false);
             }
           },
           prefill: {
@@ -153,11 +193,13 @@ export default function CheckoutPage() {
 
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
+        setLoadingMessage(null);
+        setIsLoading(false);
       }
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(error.message || "Something went wrong");
-    } finally {
+      setLoadingMessage(null);
       setIsLoading(false);
     }
   };
@@ -321,6 +363,18 @@ export default function CheckoutPage() {
           </Card>
         </div>
       </div>
+      {loadingMessage && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex flex-col items-center justify-center space-y-6 text-white transition-opacity duration-300">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-brand/20 blur-xl animate-pulse" />
+            <Loader2 className="h-16 w-16 text-brand animate-spin relative z-10" />
+          </div>
+          <div className="space-y-2 text-center relative z-10 px-4 max-w-sm">
+            <h3 className="text-xl font-black uppercase tracking-widest text-brand">KAVYA BOSS NUTRITION</h3>
+            <p className="text-sm font-bold text-muted-foreground animate-pulse leading-relaxed">{loadingMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

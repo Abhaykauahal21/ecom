@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/prisma";
 import { withRetry } from "@/lib/safe-db";
 import PremiumProductCard from "@/components/store/PremiumProductCard";

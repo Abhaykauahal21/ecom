@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Navbar from "@/components/store/Navbar";
 import Footer from "@/components/store/Footer";
 import MobileTabBar from "@/components/store/MobileTabBar";
