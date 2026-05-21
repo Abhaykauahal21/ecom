@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { MapPin, Plus, CreditCard, ShieldCheck, ArrowLeft, Loader2 } from "lucide-react";
+import { MapPin, Plus, CreditCard, ShieldCheck, ArrowLeft, Loader2, Tag, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +17,9 @@ import { getAddresses } from "@/app/actions/address";
 import AddressForm from "@/components/store/AddressForm";
 import { cn } from "@/lib/utils";
 import { getShippingConfig } from "@/app/actions/settings";
+import AuthRequiredModal from "@/components/store/AuthRequiredModal";
+import { Input } from "@/components/ui/input";
+import { getActiveSale } from "@/app/actions/sale";
 
 export default function CheckoutPage() {
   const { user, isLoaded } = useUser();
@@ -32,6 +35,12 @@ export default function CheckoutPage() {
   const [shippingCharge, setShippingCharge] = useState(99);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
 
+  const [activeSale, setActiveSale] = useState<any>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState("");
+
   useEffect(() => {
     setIsMounted(true);
     // Load Razorpay script
@@ -42,7 +51,58 @@ export default function CheckoutPage() {
 
     fetchAddresses();
     loadShippingConfig();
+    fetchActiveSale();
   }, []);
+
+  const fetchActiveSale = async () => {
+    try {
+      const res = await getActiveSale();
+      if (res.success && res.sale) {
+        setActiveSale(res.sale);
+      }
+    } catch (error) {
+      console.error("Failed to fetch active sale:", error);
+    }
+  };
+
+  const handleApplyPromo = () => {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) return;
+
+    if (activeSale) {
+      const activeCode = activeSale.name.toUpperCase().replace(/\s+/g, "");
+      if (code === activeCode) {
+        setAppliedPromo(activeSale);
+        setAppliedPromoCode(activeCode);
+        setPromoError("");
+        toast.success(`Promo code "${activeCode}" applied successfully!`);
+        return;
+      }
+    }
+
+    // Fallback "SUMMER"
+    if (code === "SUMMER") {
+      setAppliedPromo({
+        name: "Summer Sale",
+        discountPercent: 10,
+      });
+      setAppliedPromoCode("SUMMER");
+      setPromoError("");
+      toast.success('Promo code "SUMMER" applied successfully!');
+      return;
+    }
+
+    setPromoError("Invalid promo code");
+    toast.error("Invalid promo code entered");
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setAppliedPromoCode(null);
+    setPromoCode("");
+    setPromoError("");
+    toast.success("Promo code removed");
+  };
 
   const loadShippingConfig = async () => {
     try {
@@ -79,14 +139,20 @@ export default function CheckoutPage() {
 
   if (!isMounted || !isLoaded) return null;
 
+  if (!user) {
+    return <AuthRequiredModal fallbackUrl="/cart" />;
+  }
+
   if (cart.items.length === 0) {
     router.push("/cart");
     return null;
   }
 
   const subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = subtotal >= freeShippingThreshold ? 0 : shippingCharge;
-  const total = subtotal + shipping;
+  const discountAmount = appliedPromo ? Math.round(subtotal * (appliedPromo.discountPercent / 100)) : 0;
+  const discountedSubtotal = subtotal - discountAmount;
+  const shipping = discountedSubtotal >= freeShippingThreshold ? 0 : shippingCharge;
+  const total = discountedSubtotal + shipping;
 
   console.log("CHECKOUT_DEBUG:", {
     subtotal,
@@ -115,6 +181,7 @@ export default function CheckoutPage() {
           items: cart.items,
           addressId: selectedAddress,
           totalAmount: total,
+          promoCode: appliedPromoCode || undefined,
         }),
       });
 
@@ -324,11 +391,144 @@ export default function CheckoutPage() {
 
               <Separator />
 
+              {/* Promo Code Input */}
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Promo Code / Coupon</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter code (e.g. SUMMER)"
+                    value={promoCode}
+                    onChange={(e) => {
+                      setPromoCode(e.target.value);
+                      setPromoError("");
+                    }}
+                    disabled={!!appliedPromo}
+                    className="bg-background border-zinc-200 focus:border-brand rounded-xl text-foreground placeholder:text-muted-foreground"
+                  />
+                  {appliedPromo ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRemovePromo}
+                      className="border-zinc-200 text-red-500 hover:bg-zinc-100 font-bold uppercase text-xs tracking-wider px-4 rounded-xl"
+                    >
+                      Remove
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={!promoCode.trim()}
+                      className="bg-black text-white hover:bg-zinc-800 font-bold uppercase text-xs tracking-wider px-4 rounded-xl border border-black"
+                    >
+                      Apply
+                    </Button>
+                  )}
+                </div>
+                {promoError && <p className="text-xs text-red-500 font-semibold">{promoError}</p>}
+                
+                {/* Applied Promo Display */}
+                {appliedPromo && appliedPromoCode && (
+                  <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-2.5 mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <div className="bg-green-500/20 p-1.5 rounded-lg">
+                      <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-wider">
+                        Code "{appliedPromoCode}" Applied
+                      </p>
+                      <p className="text-[10px] text-green-600 dark:text-green-500 font-semibold">
+                        You saved {appliedPromo.discountPercent}%!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Available Coupons list */}
+                {!appliedPromo && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Available Coupons</p>
+                    
+                    {/* Active DB Sale Coupon */}
+                    {activeSale && (
+                      <div 
+                        onClick={() => {
+                          const code = activeSale.name.toUpperCase().replace(/\s+/g, "");
+                          setPromoCode(code);
+                          setAppliedPromo(activeSale);
+                          setAppliedPromoCode(code);
+                          setPromoError("");
+                          toast.success(`Promo code "${code}" applied!`);
+                        }}
+                        className="group flex items-center justify-between p-3 bg-brand/5 hover:bg-brand/10 border border-brand/20 hover:border-brand/40 rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md animate-in fade-in duration-300"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-brand/10 group-hover:bg-brand/20 p-2 rounded-lg transition-colors">
+                            <Sparkles className="h-4 w-4 text-brand" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs uppercase bg-brand/20 text-brand px-2 py-0.5 rounded border border-brand/30">
+                                {activeSale.name.toUpperCase().replace(/\s+/g, "")}
+                              </span>
+                              <span className="text-[10px] font-black text-brand uppercase tracking-wider">Save {activeSale.discountPercent}%</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{activeSale.announcementText}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-brand group-hover:translate-x-0.5 transition-transform">Apply</span>
+                      </div>
+                    )}
+
+                    {/* Default SUMMER Coupon */}
+                    {(!activeSale || activeSale.name.toUpperCase().replace(/\s+/g, "") !== "SUMMER") && (
+                      <div 
+                        onClick={() => {
+                          setPromoCode("SUMMER");
+                          setAppliedPromo({
+                            name: "Summer Sale",
+                            discountPercent: 10,
+                          });
+                          setAppliedPromoCode("SUMMER");
+                          setPromoError("");
+                          toast.success(`Promo code "SUMMER" applied!`);
+                        }}
+                        className="group flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md animate-in fade-in duration-300"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 p-2 rounded-lg transition-colors">
+                            <Tag className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs uppercase bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700">
+                                SUMMER
+                              </span>
+                              <span className="text-[10px] font-black text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Save 10%</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Special flat 10% discount on summer store items</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-zinc-600 dark:text-zinc-400 group-hover:translate-x-0.5 transition-transform">Apply</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-bold">₹{subtotal.toLocaleString()}</span>
                 </div>
+                {appliedPromo && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Coupon Discount ({appliedPromo.discountPercent}%)</span>
+                    <span className="font-bold">-₹{discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
                   <span className="font-bold">{shipping === 0 ? "FREE" : `₹${shipping}`}</span>

@@ -13,7 +13,10 @@ import {
   LogOut,
   ChevronRight,
   Plus,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Percent,
+  FolderOpen,
+  Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserButton } from "@clerk/nextjs";
@@ -21,9 +24,12 @@ import { UserButton } from "@clerk/nextjs";
 const sidebarLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Categories", href: "/admin/categories", icon: FolderOpen },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Banners", href: "/admin/banners", icon: ImageIcon },
+  { name: "Instagram Reels", href: "/admin/reels", icon: Video },
+  { name: "Sales", href: "/admin/sales", icon: Percent },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];

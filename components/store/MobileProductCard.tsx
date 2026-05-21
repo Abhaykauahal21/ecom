@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import useCart from "@/hooks/useCart";
 
+import { getProductPrices } from "@/lib/pricing";
+
 interface MobileProductCardProps {
   product: {
     id: string;
@@ -21,6 +23,11 @@ interface MobileProductCardProps {
     brand: string;
     rating?: number;
     stock: number;
+    sale?: {
+      isActive: boolean;
+      discountPercent: number;
+      announcementText: string;
+    } | null;
   };
 }
 
@@ -28,9 +35,13 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const cart = useCart();
   
-  const discount = product.comparePrice
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-    : 0;
+  const { price, comparePrice, isOnSale, discountPercent } = getProductPrices(product as any);
+
+  const discount = isOnSale 
+    ? discountPercent 
+    : (product.comparePrice
+      ? Math.round(((Number(product.comparePrice) - Number(product.price)) / Number(product.comparePrice)) * 100)
+      : 0);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -40,7 +51,7 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
       productId: product.id,
       name: product.name,
       slug: product.slug,
-      price: product.price,
+      price: price,
       image: product.images[0],
       quantity: 1,
       stock: product.stock,
@@ -112,10 +123,10 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
         </Link>
 
         <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-sm font-black">₹{product.price.toLocaleString()}</span>
-            {product.comparePrice && (
+            <span className="text-sm font-black">₹{price.toLocaleString()}</span>
+            {comparePrice && (
                 <span className="text-[10px] text-muted-foreground line-through decoration-brand/30">
-                    ₹{product.comparePrice.toLocaleString()}
+                    ₹{comparePrice.toLocaleString()}
                 </span>
             )}
         </div>

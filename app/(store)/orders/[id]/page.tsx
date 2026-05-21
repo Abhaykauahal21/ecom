@@ -11,6 +11,8 @@ import OrderTimeline from "@/components/store/OrderTimeline";
 import { getOrderById } from "@/app/actions/order";
 import InvoiceModal from "@/components/store/InvoiceModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useUser } from "@clerk/nextjs";
+import AuthRequiredModal from "@/components/store/AuthRequiredModal";
 
 interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
@@ -18,6 +20,7 @@ interface OrderDetailPageProps {
 
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const { id: orderId } = use(params);
+  const { isLoaded: authLoaded, isSignedIn } = useUser();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -55,6 +58,19 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     }
     loadOrder();
   }, [orderId]);
+
+  if (!authLoaded) {
+    return (
+      <div className="container mx-auto px-4 py-24 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-10 w-10 text-brand animate-spin" />
+        <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Verifying session...</p>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <AuthRequiredModal fallbackUrl="/orders" />;
+  }
 
   if (loading) {
     return (
@@ -163,6 +179,14 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   <span className="text-muted-foreground font-medium">Subtotal</span>
                   <span className="font-bold">₹{subtotal.toLocaleString()}</span>
                 </div>
+                {order.discountAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground font-medium">
+                      Discount{order.discountCode ? ` (Code: ${order.discountCode})` : ''}
+                    </span>
+                    <span className="font-bold text-green-600">-₹{order.discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground font-medium">Shipping</span>
                   <span className="font-bold">{order.shippingCost === 0 ? "FREE" : `₹${order.shippingCost}`}</span>

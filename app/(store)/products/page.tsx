@@ -54,7 +54,7 @@ export default async function ProductsPage(props: {
       ...(categoryFilter ? { category: { slug: categoryFilter } } : {}),
       ...(brandFilter ? { brand: brandFilter } : {})
     },
-    include: { category: true },
+    include: { category: true, sale: true },
     orderBy: { createdAt: "desc" },
   }));
 

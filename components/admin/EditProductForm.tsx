@@ -185,6 +185,10 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                   <Checkbox id="isFeatured" name="isFeatured" defaultChecked={product.isFeatured} className="h-5 w-5" />
                   <Label htmlFor="isFeatured" className="font-bold uppercase text-[10px] tracking-tighter">Promote on Home Page</Label>
                 </div>
+                <div className="flex items-center space-x-3">
+                  <Checkbox id="isBestPick" name="isBestPick" defaultChecked={product.isBestPick} className="h-5 w-5" />
+                  <Label htmlFor="isBestPick" className="font-bold uppercase text-[10px] tracking-tighter">Add to Best Picks</Label>
+                </div>
               </CardContent>
             </Card>
 

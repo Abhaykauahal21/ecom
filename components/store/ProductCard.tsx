@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Decimal } from "@prisma/client/runtime/library";
 import useCart from "@/hooks/useCart";
 
+import { getProductPrices } from "@/lib/pricing";
+
 interface ProductCardProps {
   product: {
     id: string;
@@ -20,19 +22,27 @@ interface ProductCardProps {
     brand: string;
     isFeatured?: boolean;
     stock: number;
+    sale?: {
+      isActive: boolean;
+      discountPercent: number;
+      announcementText: string;
+    } | null;
   };
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const cart = useCart();
+  const { price, comparePrice, isOnSale, discountPercent } = getProductPrices(product as any);
 
-  const discount = product.comparePrice
-    ? Math.round(
-        ((Number(product.comparePrice) - Number(product.price)) /
-          Number(product.comparePrice)) *
-          100
-      )
-    : 0;
+  const discount = isOnSale 
+    ? discountPercent 
+    : (product.comparePrice
+      ? Math.round(
+          ((Number(product.comparePrice) - Number(product.price)) /
+            Number(product.comparePrice)) *
+            100
+        )
+      : 0);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -42,7 +52,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       productId: product.id,
       name: product.name,
       slug: product.slug,
-      price: Number(product.price),
+      price: price,
       image: product.images[0],
       quantity: 1,
       stock: product.stock,
@@ -94,10 +104,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-bold text-sm md:text-base line-clamp-1">{product.name}</h3>
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <span className="font-bold text-lg">₹{Number(product.price).toLocaleString()}</span>
-          {product.comparePrice && (
+          <span className="font-bold text-lg">₹{price.toLocaleString()}</span>
+          {comparePrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ₹{Number(product.comparePrice).toLocaleString()}
+              ₹{comparePrice.toLocaleString()}
             </span>
           )}
         </div>

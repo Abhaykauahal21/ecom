@@ -42,6 +42,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       include: {
         category: true,
         variants: true,
+        sale: true,
       },
     })
   );
@@ -56,6 +57,9 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         categoryId: product.categoryId,
         id: { not: product.id },
         isActive: true,
+      },
+      include: {
+        sale: true,
       },
       take: 4,
     })

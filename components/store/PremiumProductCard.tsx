@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import useCart from "@/hooks/useCart";
 
+import { getProductPrices } from "@/lib/pricing";
+
 interface PremiumProductCardProps {
   product: {
     id: string;
@@ -22,6 +24,11 @@ interface PremiumProductCardProps {
     rating?: number;
     stock: number;
     isFeatured?: boolean;
+    sale?: {
+      isActive: boolean;
+      discountPercent: number;
+      announcementText: string;
+    } | null;
   };
 }
 
@@ -29,9 +36,13 @@ export default function PremiumProductCard({ product }: PremiumProductCardProps)
   const [isHovered, setIsHovered] = useState(false);
   const cart = useCart();
   
-  const discount = product.comparePrice
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
-    : 0;
+  const { price, comparePrice, isOnSale, discountPercent } = getProductPrices(product as any);
+
+  const discount = isOnSale 
+    ? discountPercent 
+    : (product.comparePrice
+      ? Math.round(((Number(product.comparePrice) - Number(product.price)) / Number(product.comparePrice)) * 100)
+      : 0);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +52,7 @@ export default function PremiumProductCard({ product }: PremiumProductCardProps)
       productId: product.id,
       name: product.name,
       slug: product.slug,
-      price: product.price,
+      price: price,
       image: product.images[0],
       quantity: 1,
       stock: product.stock,
@@ -148,10 +159,10 @@ export default function PremiumProductCard({ product }: PremiumProductCardProps)
 
         <div className="mt-auto pt-4 flex items-center justify-between">
             <div className="flex flex-col">
-                <span className="text-2xl font-black">₹{product.price.toLocaleString()}</span>
-                {product.comparePrice && (
+                <span className="text-2xl font-black">₹{price.toLocaleString()}</span>
+                {comparePrice && (
                     <span className="text-xs text-muted-foreground line-through decoration-brand/50">
-                        ₹{product.comparePrice.toLocaleString()}
+                        ₹{comparePrice.toLocaleString()}
                     </span>
                 )}
             </div>

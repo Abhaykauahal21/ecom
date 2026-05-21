@@ -43,6 +43,7 @@ const ProductSchema = z.object({
   brand: z.string().min(2, "Brand name is required"),
   images: z.array(z.string().url("Invalid image URL")).max(4, "Maximum 4 images allowed").optional().default([]),
   isFeatured: z.boolean().default(false),
+  isBestPick: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
 
@@ -77,6 +78,7 @@ export async function createProduct(formData: FormData): Promise<ProductFormStat
       brand: normalizeName(formData.get("brand") as string),
       images: allImages,
       isFeatured: formData.get("isFeatured") === "on",
+      isBestPick: formData.get("isBestPick") === "on",
       isActive: formData.get("isActive") === "on",
     };
 
@@ -123,6 +125,7 @@ export async function createProduct(formData: FormData): Promise<ProductFormStat
           categoryId: category.id,
           images: data.images,
           isFeatured: data.isFeatured,
+          isBestPick: data.isBestPick,
           isActive: data.isActive,
         },
       });
@@ -187,6 +190,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<Pro
       brand: normalizeName(formData.get("brand") as string),
       images: allImages,
       isFeatured: formData.get("isFeatured") === "on",
+      isBestPick: formData.get("isBestPick") === "on",
       isActive: formData.get("isActive") === "on",
     };
 
@@ -234,6 +238,7 @@ export async function updateProduct(id: string, formData: FormData): Promise<Pro
           categoryId: category.id,
           images: data.images,
           isFeatured: data.isFeatured,
+          isBestPick: data.isBestPick,
           isActive: data.isActive,
         },
       });
@@ -271,6 +276,60 @@ export async function updateProduct(id: string, formData: FormData): Promise<Pro
     return {
       success: false,
       message: error.message || "An unexpected database error occurred.",
+    };
+  }
+}
+
+export async function deleteProduct(id: string): Promise<{ success: boolean; message: string; isDeactivated?: boolean }> {
+  try {
+    return await withRetry(async () => {
+      // Check if product is in any order items
+      const orderItemCount = await prisma.orderItem.count({
+        where: { productId: id },
+      });
+
+      if (orderItemCount > 0) {
+        // Automatically deactivate it so it doesn't show in storefront
+        await prisma.product.update({
+          where: { id },
+          data: { isActive: false },
+        });
+
+        // Cache Invalidation
+        revalidatePath("/admin/products");
+        revalidatePath("/(store)");
+
+        return {
+          success: false,
+          isDeactivated: true,
+          message: "Product has order history and cannot be permanently deleted. It has been set to INACTIVE instead.",
+        };
+      }
+
+      // If safe to delete, first delete reviews (since they don't cascade delete on DB)
+      await prisma.review.deleteMany({
+        where: { productId: id },
+      });
+
+      // Delete the product itself (ProductVariant cascades from Product)
+      await prisma.product.delete({
+        where: { id },
+      });
+
+      // Cache Invalidation
+      revalidatePath("/admin/products");
+      revalidatePath("/(store)");
+
+      return {
+        success: true,
+        message: "Product deleted successfully!",
+      };
+    });
+  } catch (error: any) {
+    console.error("[DELETE_PRODUCT]", error);
+    return {
+      success: false,
+      message: error.message || "Failed to delete product.",
     };
   }
 }

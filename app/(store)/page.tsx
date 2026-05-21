@@ -11,6 +11,7 @@ export default async function LandingPage() {
     },
     include: {
       category: true,
+      sale: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -28,11 +29,23 @@ export default async function LandingPage() {
     orderBy: { createdAt: "desc" },
   }));
 
+  const activeSale = await withRetry(() => prisma.sale.findFirst({
+    where: { isActive: true },
+  }));
+
+  const instagramReels = await withRetry(() => prisma.instagramReel.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
+    take: 4,
+  }));
+
   return (
     <HomeContent 
       products={JSON.parse(JSON.stringify(products))} 
       categories={JSON.parse(JSON.stringify(categories))} 
       banners={JSON.parse(JSON.stringify(banners))}
+      activeSale={activeSale ? JSON.parse(JSON.stringify(activeSale)) : null}
+      instagramReels={JSON.parse(JSON.stringify(instagramReels))}
     />
   );
 }

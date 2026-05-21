@@ -7,9 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { withRetry } from "@/lib/safe-db";
+import AuthRequiredModal from "@/components/store/AuthRequiredModal";
 
 export default async function OrdersPage() {
   const { userId } = await auth();
+
+  if (!userId) {
+    return <AuthRequiredModal fallbackUrl="/" />;
+  }
 
   let orders: any[] = [];
   

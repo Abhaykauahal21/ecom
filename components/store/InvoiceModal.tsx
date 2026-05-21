@@ -141,23 +141,40 @@ export default function InvoiceModal({ isOpen, onClose, order }: InvoiceModalPro
       // Summary Calculations
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
+
       doc.text("Subtotal:", 130, finalY);
       doc.text(`INR ${subtotal.toFixed(2)}`, 196, finalY, { align: 'right' });
 
-      doc.text("Shipping:", 130, finalY + 5);
-      doc.text(order.shippingCost === 0 ? "FREE" : `INR ${order.shippingCost.toFixed(2)}`, 196, finalY + 5, { align: 'right' });
+      let y = finalY + 5;
+      if (order.discountAmount > 0) {
+        doc.setTextColor(0, 140, 0);
+        doc.text(
+          `Discount${order.discountCode ? ` (Code: ${order.discountCode})` : ''}:`,
+          130,
+          y
+        );
+        doc.text(`-INR ${order.discountAmount.toFixed(2)}`, 196, y, { align: 'right' });
+        y += 5;
+        doc.setTextColor(0, 0, 0);
+      }
 
-      doc.text("CGST (9% Included):", 130, finalY + 10);
-      doc.text(`INR ${cgst.toFixed(2)}`, 196, finalY + 10, { align: 'right' });
+      doc.text("Shipping:", 130, y);
+      doc.text(order.shippingCost === 0 ? "FREE" : `INR ${order.shippingCost.toFixed(2)}`, 196, y, { align: 'right' });
+      y += 5;
 
-      doc.text("SGST (9% Included):", 130, finalY + 15);
-      doc.text(`INR ${sgst.toFixed(2)}`, 196, finalY + 15, { align: 'right' });
+      doc.text("CGST (9% Included):", 130, y);
+      doc.text(`INR ${cgst.toFixed(2)}`, 196, y, { align: 'right' });
+      y += 5;
+
+      doc.text("SGST (9% Included):", 130, y);
+      doc.text(`INR ${sgst.toFixed(2)}`, 196, y, { align: 'right' });
+      y += 7;
 
       // Final Total
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.text("Total Amount Paid:", 130, finalY + 22);
-      doc.text(`INR ${order.totalAmount.toFixed(2)}`, 196, finalY + 22, { align: 'right' });
+      doc.text("Total Amount Paid:", 130, y);
+      doc.text(`INR ${order.totalAmount.toFixed(2)}`, 196, y, { align: 'right' });
 
       // Invoice Footer Note
       doc.setFont("helvetica", "italic");
@@ -242,6 +259,14 @@ export default function InvoiceModal({ isOpen, onClose, order }: InvoiceModalPro
               <span>Subtotal</span>
               <span>₹{subtotal.toLocaleString()}</span>
             </div>
+            {order.discountAmount > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>
+                  Discount{order.discountCode ? ` (Code: ${order.discountCode})` : ''}
+                </span>
+                <span>-₹{order.discountAmount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted-foreground">
               <span>Shipping</span>
               <span>{order.shippingCost === 0 ? "FREE" : `₹${order.shippingCost.toLocaleString()}`}</span>

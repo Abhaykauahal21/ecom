@@ -28,6 +28,7 @@ import ProductFAQ from "@/components/store/ProductFAQ";
 import ProductCard from "@/components/store/ProductCard";
 import useCart from "@/hooks/useCart";
 import { cn } from "@/lib/utils";
+import { getProductPrices } from "@/lib/pricing";
 
 interface ProductDetailViewProps {
   product: any;
@@ -45,8 +46,18 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
     setIsMounted(true);
   }, []);
 
-  const price = selectedVariant ? Number(selectedVariant.price) : Number(product.price);
-  const comparePrice = selectedVariant ? Number(selectedVariant.comparePrice) : Number(product.comparePrice);
+  const basePriceObj = getProductPrices({
+    price: selectedVariant ? Number(selectedVariant.price) : Number(product.price),
+    comparePrice: selectedVariant 
+      ? (selectedVariant.comparePrice ? Number(selectedVariant.comparePrice) : null) 
+      : (product.comparePrice ? Number(product.comparePrice) : null),
+    sale: product.sale
+  });
+
+  const price = basePriceObj.price;
+  const comparePrice = basePriceObj.comparePrice;
+  const isOnSale = basePriceObj.isOnSale;
+  const discountPercent = basePriceObj.discountPercent;
   const stock = selectedVariant ? selectedVariant.stock : product.stock;
 
   const handleAddToCart = () => {
@@ -80,9 +91,11 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
 
   if (!isMounted) return null;
 
-  const discount = comparePrice
-    ? Math.round(((comparePrice - price) / comparePrice) * 100)
-    : 0;
+  const discount = isOnSale 
+    ? discountPercent 
+    : (comparePrice
+      ? Math.round(((comparePrice - price) / comparePrice) * 100)
+      : 0);
 
   return (
     <div className="bg-background">
@@ -281,17 +294,17 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
 
       {/* Mobile Sticky CTA */}
       <AnimatePresence>
-        {product.stock > 0 && (
+        {stock > 0 && (
           <motion.div 
               initial={{ y: 100 }}
               animate={{ y: 0 }}
               className="lg:hidden fixed bottom-16 left-0 z-40 w-full p-4 bg-background/80 backdrop-blur-xl border-t border-white/10 flex items-center gap-4"
           >
               <div className="flex-1">
-                  {product.comparePrice && (
-                    <span className="text-xs text-muted-foreground line-through block font-bold">₹{Number(product.comparePrice).toLocaleString()}</span>
+                  {comparePrice && (
+                    <span className="text-xs text-muted-foreground line-through block font-bold">₹{comparePrice.toLocaleString()}</span>
                   )}
-                  <span className="text-xl font-black block">₹{Number(product.price).toLocaleString()}</span>
+                  <span className="text-xl font-black block">₹{price.toLocaleString()}</span>
               </div>
               <Button 
                   onClick={handleAddToCart}

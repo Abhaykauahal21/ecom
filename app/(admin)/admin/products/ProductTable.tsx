@@ -1,6 +1,8 @@
 "use client";
 
-import { MoreHorizontal, Edit, Trash, ExternalLink, Power } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { MoreHorizontal, Edit, Trash, ExternalLink, Power, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -11,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { deleteProduct } from "@/app/actions/product";
+import { toast } from "sonner";
 
 export default function ProductTable({ initialProducts }: { initialProducts: any[] }) {
   if (initialProducts.length === 0) {
@@ -154,24 +158,53 @@ export default function ProductTable({ initialProducts }: { initialProducts: any
 }
 
 function ProductActions({ product }: { product: any }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete product "${product.name}"?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await deleteProduct(product.id);
+      if (res.success) {
+        toast.success(res.message || "Product deleted successfully!");
+        router.refresh();
+      } else if (res.isDeactivated) {
+        toast.warning(res.message || "Product is in order history and was deactivated instead.");
+        router.refresh();
+      } else {
+        toast.error(res.message || "Failed to delete product.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
-        <MoreHorizontal className="h-4 w-4" />
+      <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" disabled={loading} />}>
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         <Link href={`/admin/products/${product.id}/edit`}>
-          <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer">
+          <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer" disabled={loading}>
             <Edit className="h-3 w-3 mr-2" /> Edit Product
           </DropdownMenuItem>
         </Link>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer">
+        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer" disabled={loading}>
           <Power className="h-3 w-3 mr-2" /> Toggle Active
         </DropdownMenuItem>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer">
+        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer" disabled={loading}>
           <ExternalLink className="h-3 w-3 mr-2" /> View in Store
         </DropdownMenuItem>
-        <DropdownMenuItem className="font-bold text-xs uppercase cursor-pointer text-destructive">
+        <DropdownMenuItem 
+          onClick={handleDelete}
+          className="font-bold text-xs uppercase cursor-pointer text-destructive"
+          disabled={loading}
+        >
           <Trash className="h-3 w-3 mr-2" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

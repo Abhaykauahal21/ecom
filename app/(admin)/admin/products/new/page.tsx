@@ -190,6 +190,10 @@ export default function NewProductPage() {
                   <Checkbox id="isFeatured" name="isFeatured" className="h-5 w-5" />
                   <Label htmlFor="isFeatured" className="font-bold uppercase text-[10px] tracking-tighter">Promote on Home Page</Label>
                 </div>
+                <div className="flex items-center space-x-3">
+                  <Checkbox id="isBestPick" name="isBestPick" className="h-5 w-5" />
+                  <Label htmlFor="isBestPick" className="font-bold uppercase text-[10px] tracking-tighter">Add to Best Picks</Label>
+                </div>
               </CardContent>
             </Card>
 
