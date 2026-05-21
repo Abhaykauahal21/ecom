@@ -15,8 +15,12 @@ interface InvoiceModalProps {
   order: {
     id: string;
     createdAt: Date | string;
-    totalAmount: number;
+    totalAmount: number; 
     shippingCost: number;
+
+    discountAmount?: number;
+    discountCode?: string | null;
+
     paymentStatus: string | null;
     paymentId: string | null;
     address: {
@@ -146,14 +150,14 @@ export default function InvoiceModal({ isOpen, onClose, order }: InvoiceModalPro
       doc.text(`INR ${subtotal.toFixed(2)}`, 196, finalY, { align: 'right' });
 
       let y = finalY + 5;
-      if (order.discountAmount > 0) {
+      if ((order.discountAmount ?? 0) > 0) {
         doc.setTextColor(0, 140, 0);
         doc.text(
           `Discount${order.discountCode ? ` (Code: ${order.discountCode})` : ''}:`,
           130,
           y
         );
-        doc.text(`-INR ${order.discountAmount.toFixed(2)}`, 196, y, { align: 'right' });
+        doc.text(`-INR ${(order.discountAmount ?? 0).toFixed(2)}`, 196, y, { align: 'right' });
         y += 5;
         doc.setTextColor(0, 0, 0);
       }
@@ -259,12 +263,12 @@ export default function InvoiceModal({ isOpen, onClose, order }: InvoiceModalPro
               <span>Subtotal</span>
               <span>₹{subtotal.toLocaleString()}</span>
             </div>
-            {order.discountAmount > 0 && (
+            {(order.discountAmount ?? 0) > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>
                   Discount{order.discountCode ? ` (Code: ${order.discountCode})` : ''}
                 </span>
-                <span>-₹{order.discountAmount.toLocaleString()}</span>
+                <span>-₹{(order.discountAmount ?? 0).toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between text-muted-foreground">
