@@ -254,31 +254,30 @@ export default function HomeContent({ products, categories, banners = [], active
         </div>
       )}
 
+        
+
       {/* === Banner and Click-to-Copy Coupon Section =========================================== */}
       <section className="w-full max-w-7xl mx-auto px-0 md:px-4 pt-0 pb-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Hero Banner (3/4 width on desktop) */}
           <div className="lg:col-span-3 relative aspect-[16/9] md:aspect-[21/9] rounded-none md:rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/5 group">
             <Image
-              src="/summer_sale_banner.png"
-              alt="Summer Sale Banner"
-              fill
-              priority
-              className="object-cover group-hover:scale-102 transition-transform duration-700 ease-out"
+            src={
+              banners && banners.length > 0
+                ? banners.find((b) => b.isActive)?.imageUrl || banners[0].imageUrl
+                : "/summer_sale_banner.png"
+            }
+            alt={
+              banners && banners.length > 0
+                ? banners.find((b) => b.isActive)?.label || "Banner"
+                : "Summer Sale Banner"
+            }
+          fill
+          priority
+          className="object-cover group-hover:scale-102 transition-transform duration-700 ease-out"
             />
-            {/* Subtle premium dark gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-10 text-white" />
-            <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10 z-10 text-white max-w-lg">
-              <Badge className="bg-brand text-black font-black uppercase text-[9px] md:text-[10px] tracking-widest px-3 py-1 rounded-full mb-3 border-none shadow-lg">
-                Limited Time Offer
-              </Badge>
-              <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-2 text-glow">
-                Summer Fitness Blast
-              </h1>
-              <p className="text-[11px] md:text-base text-white/80 font-bold uppercase tracking-wide">
-                Get dynamic discounts on verified, 100% authentic premium supplements!
-              </p>
-            </div>
+
+            
           </div>
 
           {/* Interactive Click-to-Copy Coupon Card (1/4 width on desktop) */}
@@ -346,7 +345,8 @@ export default function HomeContent({ products, categories, banners = [], active
       </section>
 
       {/* === Chalti Hui Patti (Moving Strip) ============================================== */}
-      <div className="w-full bg-brand text-black py-4 font-black uppercase tracking-widest overflow-hidden relative border-y border-black/10 select-none shadow-sm z-20">
+                
+                 <div className="w-full bg-brand text-black py-4 font-black uppercase tracking-widest overflow-hidden relative border-y border-black/10 select-none shadow-sm z-20">
         <div className="flex w-[200%] animate-marquee whitespace-nowrap">
           <div className="flex justify-around w-1/2">
             <span className="text-xs md:text-base flex items-center gap-2">★ Trusted by 1000+ Customers</span>
@@ -360,7 +360,6 @@ export default function HomeContent({ products, categories, banners = [], active
           </div>
         </div>
       </div>
-
       {/* === Shop by Category ============================================== */}
       <section className="py-16 bg-white border-b border-gray-100">
         <div className="container mx-auto px-4">
