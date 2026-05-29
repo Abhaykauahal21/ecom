@@ -126,7 +126,7 @@ export default function CheckoutButton({
         key: keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: amount,
         currency: "INR",
-        name: "E-Commerce Store",
+        name: "KAVYA BOSS NUTRITION",
         description: `Order Payment (#${orderId.substring(orderId.length - 8).toUpperCase()})`,
         order_id: razorpayOrderId,
         handler: async function (paymentResponse: any) {
