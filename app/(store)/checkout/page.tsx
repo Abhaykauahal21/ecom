@@ -20,6 +20,7 @@ import { getShippingConfig } from "@/app/actions/settings";
 import AuthRequiredModal from "@/components/store/AuthRequiredModal";
 import { Input } from "@/components/ui/input";
 import { getActiveSale } from "@/app/actions/sale";
+import CheckoutButton from "@/components/CheckoutButton";
 
 export default function CheckoutPage() {
   const { user, isLoaded } = useUser();
@@ -540,20 +541,20 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <Button 
-                onClick={handlePayment} 
-                disabled={isLoading || !selectedAddress || addresses.length === 0}
-                className="w-full h-14 bg-brand text-black hover:bg-brand/90 font-black text-lg uppercase tracking-widest shadow-[0_0_20px_rgba(0,255,135,0.3)] disabled:opacity-50 disabled:shadow-none"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Processing...
-                  </span>
-                ) : (
-                  `Pay ₹${total.toLocaleString()}`
-                )}
-              </Button>
+              <CheckoutButton
+                cartItems={cart.items}
+                selectedAddressId={selectedAddress}
+                totalAmount={total}
+                promoCode={appliedPromoCode}
+                onSuccess={(orderId) => {
+                  cart.clearCart();
+                  router.push(`/checkout/success?orderId=${orderId}`);
+                }}
+                onFailure={(err) => {
+                  toast.error(`Checkout failed: ${err}`);
+                }}
+                disabled={!selectedAddress || addresses.length === 0}
+              />
 
               <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                 <ShieldCheck className="h-3 w-3 text-brand" />
