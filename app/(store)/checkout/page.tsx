@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [shippingCharge, setShippingCharge] = useState(99);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(500);
 
+  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "COD">("ONLINE");
   const [activeSale, setActiveSale] = useState<any>(null);
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<any>(null);
@@ -355,17 +356,40 @@ export default function CheckoutPage() {
               <CreditCard className="h-5 w-5 text-brand" />
               Payment Method
             </h2>
-            <Card className="border-2">
-                <CardContent className="p-4 flex items-center gap-4">
-                    <div className="h-10 w-10 bg-brand/10 rounded-full flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-brand" />
-                    </div>
-                    <div>
-                        <p className="font-bold">Online Payment</p>
-                        <p className="text-xs text-muted-foreground">Razorpay (Cards, UPI, Netbanking)</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={(v) => setPaymentMethod(v as "ONLINE" | "COD")}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
+              <div>
+                <RadioGroupItem value="ONLINE" id="pm-online" className="peer sr-only" />
+                <Label
+                  htmlFor="pm-online"
+                  className="flex flex-col h-full p-4 bg-background border-2 rounded-xl cursor-pointer peer-data-[state=checked]:border-brand hover:bg-muted/50 transition-all"
+                >
+                  <div className="h-10 w-10 bg-brand/10 rounded-full flex items-center justify-center mb-3">
+                    <CreditCard className="h-5 w-5 text-brand" />
+                  </div>
+                  <p className="font-bold">Online Payment</p>
+                  <p className="text-xs text-muted-foreground mt-1">Razorpay (Cards, UPI, Netbanking)</p>
+                </Label>
+              </div>
+              <div>
+                <RadioGroupItem value="COD" id="pm-cod" className="peer sr-only" />
+                <Label
+                  htmlFor="pm-cod"
+                  className="flex flex-col h-full p-4 bg-background border-2 rounded-xl cursor-pointer peer-data-[state=checked]:border-brand hover:bg-muted/50 transition-all"
+                >
+                  <div className="h-10 w-10 bg-orange-500/10 rounded-full flex items-center justify-center mb-3">
+                    <svg className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <p className="font-bold">Cash on Delivery</p>
+                  <p className="text-xs text-muted-foreground mt-1">Pay when you receive your order</p>
+                </Label>
+              </div>
+            </RadioGroup>
           </section>
         </div>
 
@@ -546,9 +570,10 @@ export default function CheckoutPage() {
                 selectedAddressId={selectedAddress}
                 totalAmount={total}
                 promoCode={appliedPromoCode}
+                paymentMethod={paymentMethod}
                 onSuccess={(orderId) => {
                   cart.clearCart();
-                  router.push(`/checkout/success?orderId=${orderId}`);
+                  window.location.href = `/orders/${orderId}?placed=true`;
                 }}
                 onFailure={(err) => {
                   toast.error(`Checkout failed: ${err}`);

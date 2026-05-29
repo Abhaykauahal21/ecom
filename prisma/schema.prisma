@@ -83,6 +83,7 @@ model Order {
 
   discountCode    String?
 
+  paymentMethod   String  @default("ONLINE")
   paymentStatus   String?
   paymentId       String?
 

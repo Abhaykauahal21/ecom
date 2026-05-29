@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       }
 
       const body = await req.json();
-      const { items, addressId, totalAmount, promoCode } = body;
+      const { items, addressId, totalAmount, promoCode, paymentMethod } = body;
 
       if (!items || items.length === 0 || !addressId) {
         return NextResponse.json({ error: "Missing required fields: items or addressId" }, { status: 400 });
@@ -109,6 +109,43 @@ export async function POST(req: Request) {
       const calculatedShipping = discountedSubtotal >= freeShippingThreshold ? 0 : shippingCharge;
       const calculatedTotal = discountedSubtotal + calculatedShipping;
 
+      // Handle COD orders
+      if (paymentMethod === "COD") {
+        const order = await prisma.order.create({
+          data: {
+            userId: user.id,
+            addressId,
+            totalAmount: calculatedTotal,
+            shippingCost: calculatedShipping,
+            discountAmount: discountAmount,
+            discountCode: promoCode || null,
+            paymentMethod: "COD",
+            status: "CONFIRMED",
+            paymentStatus: "UNPAID",
+            orderItems: {
+              create: verifiedItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            },
+          },
+        });
+
+        // Decrement stock
+        for (const item of verifiedItems) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+
+        return NextResponse.json({
+          id: order.id,
+          paymentMethod: "COD",
+        });
+      }
+
       // 6. Create Razorpay order (or fallback to dummy for development if keys are not set)
       let razorpayOrderId = `dummy_order_${Date.now()}`;
       const razorpayAmount = Math.round(calculatedTotal * 100); // Amount in paisa/cents
@@ -142,6 +179,7 @@ export async function POST(req: Request) {
           shippingCost: calculatedShipping,
           discountAmount: discountAmount,
           discountCode: promoCode || null,
+          paymentMethod: "ONLINE",
           status: "PENDING",
           paymentStatus: "PENDING",
           paymentId: razorpayOrderId, // initially saved as the razorpay order id, updated on verification

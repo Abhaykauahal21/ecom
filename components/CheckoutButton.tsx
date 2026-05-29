@@ -17,6 +17,7 @@ interface CheckoutButtonProps {
   selectedAddressId: string;
   totalAmount: number;
   promoCode?: string | null;
+  paymentMethod: "ONLINE" | "COD";
   onSuccess?: (orderId: string) => void;
   onFailure?: (errorMsg: string) => void;
   disabled?: boolean;
@@ -27,6 +28,7 @@ export default function CheckoutButton({
   selectedAddressId,
   totalAmount,
   promoCode = null,
+  paymentMethod = "ONLINE",
   onSuccess,
   onFailure,
   disabled = false,
@@ -54,6 +56,7 @@ export default function CheckoutButton({
           addressId: selectedAddressId,
           totalAmount,
           promoCode: promoCode || undefined,
+          paymentMethod,
         }),
       });
 
@@ -63,9 +66,22 @@ export default function CheckoutButton({
         throw new Error(orderData.error || "Failed to create order");
       }
 
-      const { id: orderId, razorpayOrderId, amount, keyId } = orderData;
+      const { id: orderId, paymentMethod: respMethod } = orderData;
 
-      // 2. Check if we should use dummy flow (e.g., in test mode without setup)
+      // 2. Handle COD — order already confirmed on backend
+      if (respMethod === "COD" || paymentMethod === "COD") {
+        toast.success("Order placed successfully! Pay on delivery.");
+        if (onSuccess) {
+          onSuccess(orderId);
+        } else {
+          window.location.href = `/orders/${orderId}?placed=true`;
+        }
+        return;
+      }
+
+      const { razorpayOrderId, amount, keyId } = orderData;
+
+      // 3. Check if we should use dummy flow (e.g., in test mode without setup)
       if (razorpayOrderId.startsWith("dummy_")) {
         setLoadingMessage("Processing payment details...");
         
@@ -193,6 +209,8 @@ export default function CheckoutButton({
             <Loader2 className="h-5 w-5 animate-spin" />
             {loadingMessage || "Processing..."}
           </span>
+        ) : paymentMethod === "COD" ? (
+          `Place Order • ₹${totalAmount.toLocaleString()}`
         ) : (
           `Pay ₹${totalAmount.toLocaleString()}`
         )}

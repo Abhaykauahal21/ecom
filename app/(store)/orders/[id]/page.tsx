@@ -197,7 +197,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 </div>
                 <Separator />
                 <div className="flex justify-between items-baseline">
-                  <span className="text-lg font-bold">Total Paid</span>
+                  <span className="text-lg font-bold">{order.paymentMethod === "COD" ? "Total Amount" : "Total Paid"}</span>
                   <span className="text-2xl font-black text-brand">₹{order.totalAmount.toLocaleString()}</span>
                 </div>
               </CardContent>
@@ -236,14 +236,18 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">Status</p>
                   <Badge className={`font-black uppercase tracking-widest text-[10px] ${
-                    order.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'
+                    order.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-500' :
+                    order.paymentStatus === 'UNPAID' ? 'bg-orange-500/10 text-orange-500' :
+                    'bg-yellow-500/10 text-yellow-500'
                   }`}>
-                    {order.paymentStatus || 'PAID'}
+                    {order.paymentStatus === 'UNPAID' ? 'Pay on Delivery' : order.paymentStatus || 'PAID'}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-1">Method</p>
-                  <p className="text-sm font-bold">Razorpay Online Payment</p>
+                  <p className="text-sm font-bold">
+                    {order.paymentMethod === "COD" ? "Cash on Delivery" : "Razorpay Online Payment"}
+                  </p>
                 </div>
                 {order.paymentId && (
                   <div>
@@ -283,7 +287,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
               <span className="font-mono font-bold select-all">#{order.id.substring(order.id.length - 8).toUpperCase()}</span>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-muted-foreground uppercase tracking-wider">Total Paid</span>
+              <span className="font-bold text-muted-foreground uppercase tracking-wider">{order.paymentMethod === "COD" ? "Total Amount" : "Total Paid"}</span>
               <span className="font-black text-brand text-base">₹{order.totalAmount.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-xs">

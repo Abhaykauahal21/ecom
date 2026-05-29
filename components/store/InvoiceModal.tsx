@@ -89,22 +89,24 @@ export default function InvoiceModal({ isOpen, onClose, order }: InvoiceModalPro
       doc.setTextColor(0, 0, 0);
       doc.text("TAX INVOICE", 150, 20);
       
+      const pmLabel = (order as any).paymentMethod === "COD" ? "Cash on Delivery" : "Online Payment";
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(60, 60, 60);
       doc.text(`Invoice No: INV-${order.id.substring(order.id.length - 8).toUpperCase()}`, 150, 26);
       doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, 150, 31);
-      doc.text(`Payment: ${order.paymentStatus || 'PAID'}`, 150, 36);
+      doc.text(`Payment: ${order.paymentStatus === 'UNPAID' ? 'UNPAID' : order.paymentStatus || 'PAID'}`, 150, 36);
+      doc.text(`Method: ${pmLabel}`, 150, 41);
 
       // Separator Line
       doc.setDrawColor(220, 220, 220);
-      doc.line(14, 42, 196, 42);
+      doc.line(14, 47, 196, 47);
 
       // Billing Information
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.setTextColor(0, 0, 0);
-      doc.text("BILL TO:", 14, 49);
+      doc.text("BILL TO:", 14, 54);
 
       doc.setFont("helvetica", "normal");
       doc.text(order.address.name || 'Customer Name', 14, 54);

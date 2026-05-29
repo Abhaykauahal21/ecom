@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       }
 
       const body = await req.json();
-      const { items, addressId, totalAmount, promoCode } = body;
+      const { items, addressId, totalAmount, promoCode, paymentMethod } = body;
 
       if (!items || items.length === 0 || !addressId) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -106,6 +106,43 @@ export async function POST(req: Request) {
       const calculatedShipping = discountedSubtotal >= freeShippingThreshold ? 0 : shippingCharge;
       const calculatedTotal = discountedSubtotal + calculatedShipping;
 
+      // Handle COD orders
+      if (paymentMethod === "COD") {
+        const order = await prisma.order.create({
+          data: {
+            userId: user.id,
+            addressId,
+            totalAmount: calculatedTotal,
+            shippingCost: calculatedShipping,
+            discountAmount: discountAmount,
+            discountCode: promoCode || null,
+            paymentMethod: "COD",
+            status: "CONFIRMED",
+            paymentStatus: "UNPAID",
+            orderItems: {
+              create: verifiedItems.map((item: any) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+              })),
+            },
+          },
+        });
+
+        // Decrement stock
+        for (const item of verifiedItems) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+
+        return NextResponse.json({
+          id: order.id,
+          paymentMethod: "COD",
+        });
+      }
+
       // Create Razorpay order (use dummy if no keys exist for testing)
       let razorpayOrderId = `dummy_order_${Date.now()}`;
       let razorpayAmount = Math.round(calculatedTotal * 100);
@@ -129,7 +166,9 @@ export async function POST(req: Request) {
           shippingCost: calculatedShipping,
           discountAmount: discountAmount,
           discountCode: promoCode || null,
+          paymentMethod: "ONLINE",
           status: "PENDING",
+          paymentStatus: "PENDING",
           paymentId: razorpayOrderId,
           orderItems: {
             create: verifiedItems.map((item: any) => ({
