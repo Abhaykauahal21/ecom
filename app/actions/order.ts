@@ -57,6 +57,7 @@ export async function getOrderById(orderId: string) {
           ...order,
           totalAmount: Number(order.totalAmount),
           shippingCost: Number(order.shippingCost),
+          discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
           orderItems: order.orderItems.map((item) => ({
             ...item,
             price: Number(item.price),
@@ -115,6 +116,7 @@ export async function getAdminOrderById(orderId: string) {
           ...order,
           totalAmount: Number(order.totalAmount),
           shippingCost: Number(order.shippingCost),
+          discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
           orderItems: order.orderItems.map((item) => ({
             ...item,
             price: Number(item.price),

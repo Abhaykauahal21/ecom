@@ -108,16 +108,16 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         Back to Orders
       </Link>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight">Order Details</h1>
-          <p className="text-muted-foreground font-medium text-xs uppercase tracking-wider mt-1">
-            Order #{order.id.substring(order.id.length - 8).toUpperCase()} • Placed on {new Date(order.createdAt).toLocaleDateString()}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Order Details</h1>
+          <p className="text-muted-foreground font-medium text-[10px] sm:text-xs uppercase tracking-wider">
+            Order #{order.id.substring(order.id.length - 8).toUpperCase()} • {new Date(order.createdAt).toLocaleDateString()}
           </p>
         </div>
         <Button 
           onClick={() => setIsInvoiceOpen(true)}
-          className="flex items-center gap-2 font-black uppercase text-xs tracking-widest bg-brand text-black hover:bg-brand/90 shadow-[0_0_20px_rgba(0,255,135,0.25)] h-11 px-5 rounded-2xl"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 font-black uppercase text-xs tracking-widest bg-brand text-black hover:bg-brand/90 shadow-[0_0_20px_rgba(0,255,135,0.25)] h-11 px-5 rounded-2xl"
         >
           <ExternalLink className="h-4 w-4" />
           Download Invoice
@@ -131,9 +131,9 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
         {/* Left Side: Order Items and Summary */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
           <section>
             <h2 className="text-xl font-bold uppercase tracking-tight mb-4 flex items-center gap-2">
               <Package className="h-5 w-5 text-brand" />
@@ -206,7 +206,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         </div>
 
         {/* Right Side: Shipping and Payment Info */}
-        <div className="lg:col-span-1 space-y-8">
+        <div className="lg:col-span-1 space-y-6 sm:space-y-8">
           <section>
             <h2 className="text-xl font-bold uppercase tracking-tight mb-4 flex items-center gap-2">
               <MapPin className="h-5 w-5 text-brand" />
@@ -268,37 +268,37 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       />
 
       <Dialog open={showPlacedPopup} onOpenChange={setShowPlacedPopup}>
-        <DialogContent className="max-w-md border-none shadow-2xl bg-white/95 dark:bg-black/95 backdrop-blur-2xl p-6 rounded-3xl text-center">
-          <DialogHeader className="space-y-3">
-            <div className="mx-auto h-20 w-20 bg-green-100 dark:bg-green-950/50 text-green-600 rounded-full flex items-center justify-center animate-bounce">
-              <CheckCircle2 className="h-12 w-12" />
+        <DialogContent className="w-[92vw] max-w-md border-none shadow-2xl bg-white dark:bg-black backdrop-blur-2xl p-4 sm:p-6 rounded-3xl text-center">
+          <DialogHeader className="space-y-2 sm:space-y-3">
+            <div className="mx-auto h-16 w-16 sm:h-20 sm:w-20 bg-green-100 dark:bg-green-950/50 text-green-600 rounded-full flex items-center justify-center animate-bounce">
+              <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12" />
             </div>
-            <DialogTitle className="text-3xl font-black uppercase tracking-tight text-center">
+            <DialogTitle className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-center">
               ORDER PLACED!
             </DialogTitle>
-            <DialogDescription className="text-sm font-medium text-muted-foreground text-center px-2">
+            <DialogDescription className="text-xs sm:text-sm font-medium text-muted-foreground text-center px-2">
               Thank you for shopping with <strong className="text-black dark:text-white font-bold">Kavya Boss Nutrition</strong>! Your order has been placed successfully and is currently being processed.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="my-6 bg-muted/30 p-4 rounded-2xl border border-muted/50 space-y-2 text-sm">
-            <div className="flex justify-between items-center text-xs">
+          <div className="my-4 sm:my-6 bg-muted/30 p-3 sm:p-4 rounded-2xl border border-muted/50 space-y-2 text-xs sm:text-sm">
+            <div className="flex justify-between items-center text-[10px] sm:text-xs">
               <span className="font-bold text-muted-foreground uppercase tracking-wider">Order ID</span>
               <span className="font-mono font-bold select-all">#{order.id.substring(order.id.length - 8).toUpperCase()}</span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div className="flex justify-between items-center text-[10px] sm:text-xs">
               <span className="font-bold text-muted-foreground uppercase tracking-wider">{order.paymentMethod === "COD" ? "Total Amount" : "Total Paid"}</span>
-              <span className="font-black text-brand text-base">₹{order.totalAmount.toLocaleString()}</span>
+              <span className="font-black text-brand text-sm sm:text-base">₹{order.totalAmount.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center text-xs">
+            <div className="flex justify-between items-center text-[10px] sm:text-xs">
               <span className="font-bold text-muted-foreground uppercase tracking-wider">Address</span>
-              <span className="font-bold text-muted-foreground truncate max-w-[180px]">{order.address.name}</span>
+              <span className="font-bold text-muted-foreground truncate max-w-[120px] sm:max-w-[180px]">{order.address.name}</span>
             </div>
           </div>
 
           <Button
             onClick={() => setShowPlacedPopup(false)}
-            className="w-full font-black uppercase text-xs tracking-widest h-12 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 rounded-2xl shadow-xl"
+            className="w-full font-black uppercase text-xs tracking-widest h-11 sm:h-12 bg-black text-white dark:bg-white dark:text-black hover:opacity-90 rounded-2xl shadow-xl"
           >
             Track My Order
           </Button>
